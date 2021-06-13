@@ -2,7 +2,12 @@ require "pg"
 
 class DatabasePersistence
   def initialize(logger)
-    @db = PG.connect(dbname: "todos")
+    @db = if Sinatra::Base.production?
+        PG.connect(ENV['DATABASE_URL'])
+      else
+        PG.connect(dbname: "todos")
+      end
+
     @logger = logger
   end
 
@@ -14,6 +19,7 @@ class DatabasePersistence
   def find_list(id)
     sql = "SELECT * FROM  lists WHERE id = $1"
     result = query(sql, id)
+
 
     tuple = result.first
     list_id = tuple["id"].to_i
@@ -67,6 +73,10 @@ class DatabasePersistence
     sql = "UPDATE todos SET completed = 't' WHERE list_id = $1"
     query(sql, list_id)
   end
+
+  def disconnect
+  @db.close
+end
 
   private
 
